@@ -29,7 +29,7 @@ router.get("/notify", async (req, res) => {
   return res.status(200).send("OK");
 });
 
-router.post("/get-profiles-from-search-url", async (req, res) => {
+router.post("/search-people", async (req, res) => {
   try {
     const { account_id, search_url } = req.body;
     const url = `https://api3.unipile.com:13349/api/v1/linkedin/search?account_id=${account_id}`;
@@ -48,7 +48,7 @@ router.post("/get-profiles-from-search-url", async (req, res) => {
     const result = await axios.post(url, body, options);
     return res.status(200).send(result.data);
   } catch (error) {
-    console.log("/get-profiles-from-search-url error: ", error);
+    console.log("/search people error: ", error);
     return res.status(500).send(error);
   }
 });
@@ -121,21 +121,17 @@ router.post("/search-posts", async (req, res) => {
     };
 
     function processLinkedInSearchUrl(searchUrl, start, count) {
-      // Parse the URL and get the search parameters
       const url = new URL(searchUrl);
       const params = new URLSearchParams(url.search);
 
-      // Extract the relevant parameters
       const keywords = params.get("keywords");
       const contentType = params.get("contentType");
       const datePosted = params.get("datePosted");
       const postedBy = params.get("postedBy");
       const sortBy = params.get("sortBy");
 
-      // Initialize the query parameters array
       const queryParameters = [];
 
-      // Conditionally add parameters to the query
       if (contentType) {
         queryParameters.push(`(key:contentType,value:List(${contentType}))`);
       }
@@ -145,16 +141,14 @@ router.post("/search-posts", async (req, res) => {
       if (postedBy) {
         queryParameters.push(
           `(key:postedBy,value:List(${postedBy.replace(/[\[\]\"]/g, "")}))`
-        ); // Remove brackets and quotes
+        );
       }
       if (sortBy) {
         queryParameters.push(`(key:sortBy,value:List(${sortBy}))`);
       }
 
-      // Always include resultType as it's necessary for the API call
       queryParameters.push(`(key:resultType,value:List(CONTENT))`);
 
-      // Construct the variables string correctly
       const variables = `(start:${start},origin:FACETED_SEARCH,query:(keywords:${encodeURIComponent(
         keywords
       )},flagshipSearchIntent:SEARCH_SRP,queryParameters:List(${queryParameters.join(

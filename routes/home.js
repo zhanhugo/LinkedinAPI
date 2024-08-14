@@ -110,7 +110,7 @@ router.post("/get-all-posts", async (req, res) => {
 
 router.post("/search-posts", async (req, res) => {
   try {
-    const { account_id } = req.body;
+    const { account_id, search_url, start=0 } = req.body;
     const url = "https://api3.unipile.com:13349/api/v1/linkedin";
     const options = {
       headers: {
@@ -120,12 +120,60 @@ router.post("/search-posts", async (req, res) => {
       },
     };
 
+    function processLinkedInSearchUrl(searchUrl, start, count) {
+      // Parse the URL and get the search parameters
+      const url = new URL(searchUrl);
+      const params = new URLSearchParams(url.search);
+
+      // Extract the relevant parameters
+      const keywords = params.get("keywords");
+      const contentType = params.get("contentType");
+      const datePosted = params.get("datePosted");
+      const postedBy = params.get("postedBy");
+      const sortBy = params.get("sortBy");
+
+      // Initialize the query parameters array
+      const queryParameters = [];
+
+      // Conditionally add parameters to the query
+      if (contentType) {
+        queryParameters.push(`(key:contentType,value:List(${contentType}))`);
+      }
+      if (datePosted) {
+        queryParameters.push(`(key:datePosted,value:List(${datePosted}))`);
+      }
+      if (postedBy) {
+        queryParameters.push(
+          `(key:postedBy,value:List(${postedBy.replace(/[\[\]\"]/g, "")}))`
+        ); // Remove brackets and quotes
+      }
+      if (sortBy) {
+        queryParameters.push(`(key:sortBy,value:List(${sortBy}))`);
+      }
+
+      // Always include resultType as it's necessary for the API call
+      queryParameters.push(`(key:resultType,value:List(CONTENT))`);
+
+      // Construct the variables string correctly
+      const variables = `(start:${start},origin:FACETED_SEARCH,query:(keywords:${encodeURIComponent(
+        keywords
+      )},flagshipSearchIntent:SEARCH_SRP,queryParameters:List(${queryParameters.join(
+        ","
+      )})),count:${count})`;
+
+      const queryId =
+        "voyagerSearchDashClusters.37920f17209f22c510dd410658abc540";
+
+      return {
+        variables,
+        queryId,
+      };
+    }
+
+    const query_params = processLinkedInSearchUrl(search_url, start, 3);
+
     const body = JSON.stringify({
-      query_params: {
-        variables:
-          "(start:0,origin:SWITCH_SEARCH_VERTICAL,query:(keywords:ui/ux,flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:resultType,value:List(CONTENT))),includeFiltersInResponse:false))",
-        queryId: "voyagerSearchDashClusters.838ad2ecdec3b0347f493f93602336e9",
-      },
+      query_params: query_params,
       account_id: account_id,
       request_url: "https://www.linkedin.com/voyager/api/graphql",
       method: "GET",

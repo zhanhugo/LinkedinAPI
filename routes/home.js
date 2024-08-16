@@ -12,27 +12,25 @@ router.get("/", (req, res) => {
   res.send("Welcome to the Home Route!");
 });
 
-router.get("/generate-login-link", async (req, res) => {
+router.post("/login-link", async (req, res) => {
   try {
+    const { success_redirect_url, failure_redirect_url, notify_url } = req.body;
+    const currentTime = new Date();
+    currentTime.setHours(currentTime.getHours() + 1);
     const response = await client.account.createHostedAuthLink({
       type: "create",
       api_url: "https://api3.unipile.com:13349",
-      success_redirect_url: "http://localhost:3000/success",
-      expiresOn: "2024-12-22T12:00:00.701Z",
+      success_redirect_url: success_redirect_url,
+      failure_redirect_url: failure_redirect_url,
+      notify_url: notify_url,
+      expiresOn: currentTime.toISOString(),
       providers: "LINKEDIN",
-      notify_url: "http://localhost/notify",
     });
     return res.status(200).send(response);
   } catch (error) {
-    console.log("/generate-login-link error: ", error);
+    console.log("/login-link error: ", error);
     return res.status(500).send(error);
   }
-});
-
-router.get("/notify", async (req, res) => {
-  console.log('bruh')
-  console.log(req.body);
-  return res.status(200).send("OK");
 });
 
 router.post("/search-people", async (req, res) => {
@@ -72,7 +70,9 @@ router.post("/get-profile", async (req, res) => {
 
 router.post("/send-connection-request", async (req, res) => {
   try {
-    const { account_id, provider_id, message } = req.body; //message need to be <300 characters
+    const { account_id, identifier, message } = req.body; //message need to be <300 characters
+    const target = await client.users.getProfile({ account_id, identifier });
+    const provider_id = target.provider_id; 
     const response = await client.users.sendInvitation({
       account_id,
       provider_id,
@@ -257,8 +257,8 @@ router.post("/react", async (req, res) => {
 
 router.post("/dm", async (req, res) => {
   try {
-    const { account_id, text, public_id } = req.body;
-    const target = await client.users.getProfile({ account_id, identifier: public_id });
+    const { account_id, text, identifier } = req.body;
+    const target = await client.users.getProfile({ account_id, identifier });
     const attendee_id = target.provider_id;
     console.log("attendee_id: ", attendee_id);
     const response = await client.messaging.startNewChat({

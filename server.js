@@ -1,13 +1,9 @@
 import express from "express";
-import { connectDB } from "./utils/db.js";
 import cors from "cors";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 dotenv.config();
-
-// Connect to MongoDB database
-// (async () => await connectDB())();
 
 const app = express();
 const corsOptions = {

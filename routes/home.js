@@ -7,6 +7,11 @@ const apiKey = "wnGwYz9n.n3a3hH55dOuTdcOR37JL7Idh3ofZ6AoeLK9BDJQt2qA=";
 
 const client = new UnipileClient("https://api3.unipile.com:13349", apiKey);
 
+router.get("/", (req, res) => {
+  console.log("Called Home route");
+  res.send("Welcome to the Home Route!");
+});
+
 router.get("/generate-login-link", async (req, res) => {
   try {
     const response = await client.account.createHostedAuthLink({
@@ -25,6 +30,7 @@ router.get("/generate-login-link", async (req, res) => {
 });
 
 router.get("/notify", async (req, res) => {
+  console.log('bruh')
   console.log(req.body);
   return res.status(200).send("OK");
 });
@@ -66,10 +72,11 @@ router.post("/get-profile", async (req, res) => {
 
 router.post("/send-connection-request", async (req, res) => {
   try {
-    const { account_id, provider_id } = req.body;
+    const { account_id, provider_id, message } = req.body; //message need to be <300 characters
     const response = await client.users.sendInvitation({
       account_id,
       provider_id,
+      message,
     });
     console.log(JSON.stringify(response));
     return res.status(200).send(response);
@@ -227,6 +234,48 @@ router.post("/comment", async (req, res) => {
     return res.status(200).send(response);
   } catch (error) {
     console.log("/comment error: ", error);
+    return res.status(500).send(error);
+  }
+});
+
+router.post("/react", async (req, res) => {
+  try {
+    const { account_id, post_id, reaction_type = "like" } = req.body; //reaction_type: like, celebrate, support, love, insightful, funny
+
+    const response = await client.users.sendPostReaction({
+      account_id,
+      post_id,
+      reaction_type, 
+    });
+    console.log(JSON.stringify(response));
+    return res.status(200).send(response);
+  } catch (error) {
+    console.log("/comment error: ", error);
+    return res.status(500).send(error);
+  }
+});
+
+router.post("/dm", async (req, res) => {
+  try {
+    const { account_id, text, public_id } = req.body;
+    const target = await client.users.getProfile({ account_id, identifier: public_id });
+    const attendee_id = target.provider_id;
+    console.log("attendee_id: ", attendee_id);
+    const response = await client.messaging.startNewChat({
+      account_id: account_id,
+      text: text,
+      attendees_ids: [attendee_id],
+      options: {
+        linkedin: {
+          api: 'classic',
+          inmail: false
+        }
+      }
+    })
+  
+    return res.status(200).send(response); // response includes chat_id
+  } catch (error) {
+    console.log("/dm error: ", error);
     return res.status(500).send(error);
   }
 });

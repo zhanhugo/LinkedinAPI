@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Connect to MongoDB database
-(async () => await connectDB())();
+// (async () => await connectDB())();
 
 const app = express();
 const corsOptions = {
@@ -36,7 +36,7 @@ app.use("/", home);
 // Real IP Address
 app.set("trust proxy", true);
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 const server = app.listen(port, () => {
   console.log(`Listening on port ${port}...`);
 });

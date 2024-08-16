@@ -8,8 +8,12 @@ dotenv.config();
 const app = express();
 const corsOptions = {
   origin: [
-    "https://localhost:3000",
     "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "https://localhost:3000",
+    "https://localhost:3001",
+    "https://localhost:3002",
     "https://insect-patient-moose.ngrok-free.app",
   ],
   credentials: true, //access-control-allow-credentials:true

@@ -123,10 +123,11 @@ router.post("/get-all-connections", async (req, res) => {
 router.post("/get-all-posts", async (req, res) => {
   try {
     const { account_id, identifier, cursor, limit } = req.body;
-
+    const target = await client.users.getProfile({ account_id, identifier });
+    const provider_id = target.provider_id;
     const params = {
       account_id,
-      identifier,
+      identifier: provider_id,
     };
 
     if (cursor) {

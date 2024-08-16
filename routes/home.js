@@ -7,24 +7,19 @@ const apiKey = "wnGwYz9n.n3a3hH55dOuTdcOR37JL7Idh3ofZ6AoeLK9BDJQt2qA=";
 
 const client = new UnipileClient("https://api3.unipile.com:13349", apiKey);
 
-router.get("/", (req, res) => {
-  console.log("Called Home route");
-  res.send("Welcome to the Home Route!");
-});
-
 router.post("/login-link", async (req, res) => {
   try {
-    const { success_redirect_url, failure_redirect_url, notify_url } = req.body;
-    const currentTime = new Date();
-    currentTime.setHours(currentTime.getHours() + 1);
+    const { success_redirect_url, failure_redirect_url } = req.body;
+    const expireTime = new Date();
+    expireTime.setHours(expireTime.getHours() + 1);
     const response = await client.account.createHostedAuthLink({
       type: "create",
       api_url: "https://api3.unipile.com:13349",
       success_redirect_url: success_redirect_url,
       failure_redirect_url: failure_redirect_url,
-      notify_url: notify_url,
-      expiresOn: currentTime.toISOString(),
-      providers: "LINKEDIN",
+      expiresOn: expireTime.toISOString(),
+      providers: ["LINKEDIN"],
+      notify_url: "https://linkedinapi-production-1eda.up.railway.app/notify",
     });
     return res.status(200).send(response);
   } catch (error) {
@@ -33,10 +28,24 @@ router.post("/login-link", async (req, res) => {
   }
 });
 
+router.get("/notify", async (req, res) => {
+  console.log(req.body);
+  return res.status(200).send("OK");
+});
+
 router.post("/search-people", async (req, res) => {
   try {
-    const { account_id, search_url } = req.body;
-    const url = `https://api3.unipile.com:13349/api/v1/linkedin/search?account_id=${account_id}`;
+    const { account_id, search_url, cursor, limit } = req.body;
+
+    let url = `https://api3.unipile.com:13349/api/v1/linkedin/search?account_id=${account_id}`;
+
+    if (cursor) {
+      url += `&cursor=${cursor}`;
+    }
+    if (limit) {
+      url += `&limit=${limit}`;
+    }
+
     const options = {
       headers: {
         accept: "application/json",
@@ -44,15 +53,17 @@ router.post("/search-people", async (req, res) => {
         "X-API-KEY": apiKey,
       },
     };
+
     const body = {
       api: "classic",
       category: "people",
       url: search_url,
     };
+
     const result = await axios.post(url, body, options);
     return res.status(200).send(result.data);
   } catch (error) {
-    console.log("/search people error: ", error);
+    console.log("/search-people error: ", error);
     return res.status(500).send(error);
   }
 });
@@ -72,7 +83,7 @@ router.post("/send-connection-request", async (req, res) => {
   try {
     const { account_id, identifier, message } = req.body; //message need to be <300 characters
     const target = await client.users.getProfile({ account_id, identifier });
-    const provider_id = target.provider_id; 
+    const provider_id = target.provider_id;
     const response = await client.users.sendInvitation({
       account_id,
       provider_id,
@@ -89,11 +100,19 @@ router.post("/send-connection-request", async (req, res) => {
 router.post("/get-all-connections", async (req, res) => {
   try {
     const { account_id, cursor, limit } = req.body;
-    const response = await client.users.getAllRelations({
+
+    const params = {
       account_id,
-      cursor,
-      limit,
-    });
+    };
+
+    if (cursor) {
+      params.cursor = cursor;
+    }
+
+    if (limit) {
+      params.limit = limit;
+    }
+    const response = await client.users.getAllRelations(params);
     return res.status(200).send(response);
   } catch (error) {
     console.log("/get-all-connections error: ", error);
@@ -103,11 +122,23 @@ router.post("/get-all-connections", async (req, res) => {
 
 router.post("/get-all-posts", async (req, res) => {
   try {
-    const { account_id, identifier } = req.body;
-    const response = await client.users.getAllPosts({
+    const { account_id, identifier, cursor, limit } = req.body;
+
+    const params = {
       account_id,
       identifier,
-    });
+    };
+
+    if (cursor) {
+      params.cursor = cursor;
+    }
+
+    if (limit) {
+      params.limit = limit;
+    }
+
+    const response = await client.users.getAllPosts(params);
+
     return res.status(200).send(response);
   } catch (error) {
     console.log("/get-all-posts error: ", error);
@@ -117,7 +148,7 @@ router.post("/get-all-posts", async (req, res) => {
 
 router.post("/search-posts", async (req, res) => {
   try {
-    const { account_id, search_url, start=0 } = req.body;
+    const { account_id, search_url, start = 0 } = req.body;
     const url = "https://api3.unipile.com:13349/api/v1/linkedin";
     const options = {
       headers: {
@@ -245,7 +276,7 @@ router.post("/react", async (req, res) => {
     const response = await client.users.sendPostReaction({
       account_id,
       post_id,
-      reaction_type, 
+      reaction_type,
     });
     console.log(JSON.stringify(response));
     return res.status(200).send(response);
@@ -267,12 +298,12 @@ router.post("/dm", async (req, res) => {
       attendees_ids: [attendee_id],
       options: {
         linkedin: {
-          api: 'classic',
-          inmail: false
-        }
-      }
-    })
-  
+          api: "classic",
+          inmail: false,
+        },
+      },
+    });
+
     return res.status(200).send(response); // response includes chat_id
   } catch (error) {
     console.log("/dm error: ", error);

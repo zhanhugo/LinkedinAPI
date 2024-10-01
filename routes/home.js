@@ -28,7 +28,7 @@ router.post("/login-link", async (req, res) => {
   }
 });
 
-router.get("/notify", async (req, res) => {
+router.post("/notify", async (req, res) => {
   console.log(req.body);
   return res.status(200).send("OK");
 });
